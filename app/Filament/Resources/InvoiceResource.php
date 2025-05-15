@@ -35,6 +35,19 @@ class InvoiceResource extends Resource
 
     protected static ?string $navigationGroup = 'Finance';
 
+    protected function getCurrencySymbol($currency)
+    {
+        return match ($currency) {
+            'USD' => '$',
+            'EUR' => '€',
+            'GBP' => '£',
+            'SAR' => '﷼',
+            'AED' => 'د.إ',
+            'KWD' => 'د.ك',
+            default => '$'
+        };
+    }
+
     public static function form(Form $form): Form
     {
         return $form
@@ -55,10 +68,33 @@ class InvoiceResource extends Resource
                 TextInput::make('shop_name')
                     ->required()
                     ->maxLength(200),
+                Select::make('currency')
+                    ->options([
+                        'USD' => 'US Dollar ($)',
+                        'EUR' => 'Euro (€)',
+                        'GBP' => 'British Pound (£)',
+                        'SAR' => 'Saudi Riyal (﷼)',
+                        'AED' => 'UAE Dirham (د.إ)',
+                        'KWD' => 'Kuwaiti Dinar (د.ك)',
+                    ])
+                    ->default('USD')
+                    ->required()
+                    ->reactive(),
                 TextInput::make('price')
                     ->required()
                     ->numeric()
-                    ->prefix('$'),
+                    ->prefix(function (callable $get) {
+                        $currency = $get('currency');
+                        return match ($currency) {
+                            'USD' => '$',
+                            'EUR' => '€',
+                            'GBP' => '£',
+                            'SAR' => '﷼',
+                            'AED' => 'د.إ',
+                            'KWD' => 'د.ك',
+                            default => '$'
+                        };
+                    }),
                 SpatieMediaLibraryFileUpload::make('invoice_pdf')
                     ->collection('invoice_pdfs')
                     ->acceptedFileTypes(['application/pdf'])
@@ -83,7 +119,7 @@ class InvoiceResource extends Resource
                 TextColumn::make('shop_name')
                     ->searchable(),
                 TextColumn::make('price')
-                    ->money()
+                    ->formatStateUsing(fn (Model $record): string => "{$record->price} {$record->currency}")
                     ->sortable(),
                 IconColumn::make('invoice_pdfs')
                     ->label('PDF')
@@ -107,6 +143,15 @@ class InvoiceResource extends Resource
                                 fn (Builder $query, $date): Builder => $query->whereDate('purchase_date', '<=', $date),
                             );
                     }),
+                SelectFilter::make('currency')
+                    ->options([
+                        'USD' => 'US Dollar ($)',
+                        'EUR' => 'Euro (€)',
+                        'GBP' => 'British Pound (£)',
+                        'SAR' => 'Saudi Riyal (﷼)',
+                        'AED' => 'UAE Dirham (د.إ)',
+                        'KWD' => 'Kuwaiti Dinar (د.ك)',
+                    ]),
             ])
             ->actions([
                 EditAction::make(),

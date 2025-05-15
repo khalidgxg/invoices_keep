@@ -20,6 +20,7 @@ class Invoice extends Model implements HasMedia
         'model',
         'shop_name',
         'price',
+        'currency',
         'user_id',
     ];
 
